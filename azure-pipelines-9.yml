@@ -21,35 +21,26 @@ steps:
       versionSpec: '20.19.4'
     displayName: 'Use Node.js 20.19.4'
 
-  # Full clean install
   - script: |
-      rm -rf node_modules package-lock.json
+      echo "Cleaning old modules and cache..."
+      rm -rf node_modules package-lock.json .next
       npm cache clean --force
-      
-      # Install exact Next.js and matching webpack/tapable versions
-      npm install next@14.2.5 --save-exact
-      npm install webpack@5.89.0 tapable@2.2.1 --save-exact
-      npm install
+
+      echo "Installing fixed versions of dependencies..."
+      npm install next@14.2.5 webpack@5.89.0 tapable@2.2.1 --save-exact --legacy-peer-deps
       npm dedupe
-    displayName: 'Clean install dependencies'
 
-  # Debug: show installed versions
-  - script: |
-      echo "Webpack versions in tree:"
+      echo "Checking dependency versions..."
       npm ls webpack || true
-      echo "Tapable versions in tree:"
       npm ls tapable || true
-    displayName: 'Check dependency versions'
+    displayName: 'Install dependencies'
 
-  - script: rm -rf .next
-    displayName: 'Clean Next.js cache'
-
-  - script: npm run build
+  - script: |
+      echo "Building project..."
+      npm run build
     displayName: 'Build project'
 
-  # Only copy if build succeeded
   - task: CopyFiles@2
-    condition: succeeded()
     inputs:
       SourceFolder: '.next'
       Contents: '**'
@@ -57,7 +48,6 @@ steps:
     displayName: 'Copy Next.js build output'
 
   - task: PublishBuildArtifacts@1
-    condition: succeeded()
     inputs:
       PathtoPublish: '$(Build.ArtifactStagingDirectory)/next-build'
       ArtifactName: 'next-build'
