@@ -4,18 +4,56 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
 
 trigger:
-- master
+  - master
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
+
+variables:
+  NODE_OPTIONS: '--openssl-legacy-provider'
 
 steps:
-- task: NodeTool@0
-  inputs:
-    versionSpec: '20.x'
-  displayName: 'Install Node.js'
+  - checkout: self
+    fetchDepth: 1
 
-- script: |
-    npm install
-    npm run build
-  displayName: 'npm install and build'
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '20.19.4'
+    displayName: 'Use Node.js 20.19.4'
+
+  # Clean install to avoid mismatched deps
+  - script: |
+      rm -rf node_modules package-lock.json
+      npm cache clean --force
+      npm install next@14.2.5 --save-exact
+      npm install
+      npm dedupe
+    displayName: 'Clean install dependencies'
+
+  - script: |
+      echo "Webpack versions in tree:"
+      npm ls webpack || true
+      echo "Tapable versions in tree:"
+      npm ls tapable || true
+    displayName: 'Check dependency versions'
+
+  - script: rm -rf .next
+    displayName: 'Clean Next.js cache'
+
+  - script: npm run build
+    displayName: 'Build project'
+
+  # Package and publish the build output
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '.next'
+      Contents: '**'
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/next-build'
+    displayName: 'Copy Next.js build output'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/next-build'
+      ArtifactName: 'next-build'
+      publishLocation: 'Container'
+    displayName: 'Publish build artifacts'
