@@ -1,0 +1,40 @@
+# Node.js with React
+# Build a Node.js project that uses React.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
+
+trigger:
+  - main  
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+  # 1️⃣ Checkout the repository
+  - checkout: self
+    fetchDepth: 1
+
+  # 2️⃣ Use the correct Node.js version
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '20.19.4'
+    displayName: 'Use Node.js 20.19.4'
+
+  # 3️⃣ Install dependencies from lockfile (faster & exact versions)
+  - script: npm ci
+    displayName: 'Install dependencies from package-lock.json'
+
+  # 4️⃣ Check Webpack & Tapable versions before build
+  - script: |
+      echo "Checking Webpack and Tapable versions..."
+      npx webpack --version || echo "Webpack not found"
+      npm ls tapable || echo "Tapable not found"
+    displayName: 'Verify dependency versions'
+
+  # 5️⃣ Clean Next.js cache
+  - script: rm -rf .next
+    displayName: 'Clean Next.js cache'
+
+  # 6️⃣ Build the Next.js app
+  - script: npm run build
+    displayName: 'Build Next.js project'
