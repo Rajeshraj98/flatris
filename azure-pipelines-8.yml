@@ -4,18 +4,37 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
 
 trigger:
-- master
+  - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
 steps:
-- task: NodeTool@0
-  inputs:
-    versionSpec: '20.x'
-  displayName: 'Install Node.js'
+  - checkout: self
+    fetchDepth: 1
 
-- script: |
-    npm install
-    npm run build
-  displayName: 'npm install and build'
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '20.19.4'
+    displayName: 'Use Node.js 20.19.4'
+
+  - script: |
+      npm install next@14.2.5 --save-exact
+      npm dedupe
+    displayName: 'Upgrade Next.js & deduplicate packages'
+
+  - script: npm install
+    displayName: 'Install dependencies'
+
+  - script: |
+      echo "Webpack versions in tree:"
+      npm ls webpack || true
+      echo "Tapable versions in tree:"
+      npm ls tapable || true
+    displayName: 'Check dependency versions'
+
+  - script: rm -rf .next
+    displayName: 'Clean Next.js cache'
+
+  - script: npm run build
+    displayName: 'Build project'
