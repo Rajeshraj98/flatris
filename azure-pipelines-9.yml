@@ -4,35 +4,42 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
 
 trigger:
-  - master
+- main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
 steps:
-  - task: NodeTool@0
-    inputs:
-      versionSpec: '18.x'
-    displayName: 'Install Node.js'
+# 1️⃣ Install Node.js
+- task: NodeTool@0
+  inputs:
+    versionSpec: '18.x'
+  displayName: 'Install Node.js'
 
-  - script: |
-      npm ci
-    displayName: 'Install dependencies'
+# 2️⃣ Install dependencies (npm ci requires package-lock.json)
+- script: |
+    cd web
+    npm ci
+  displayName: 'Install dependencies'
 
-  - script: |
-      npm run build
-    displayName: 'Build Next.js project'
+# 3️⃣ Build Next.js project
+- script: |
+    cd web
+    npm run build
+  displayName: 'Build Next.js project'
 
-  - task: CopyFiles@2
-    inputs:
-      SourceFolder: '.next'
-      Contents: '**'
-      TargetFolder: '$(Build.ArtifactStagingDirectory)/next-build'
-    displayName: 'Copy Next.js build output'
+# 4️⃣ Copy .next build output to artifact staging directory
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: 'web/.next'
+    Contents: '**'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/.next'
+  displayName: 'Copy .next build output'
 
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: '$(Build.ArtifactStagingDirectory)/next-build'
-      ArtifactName: 'next-build'
-      publishLocation: 'Container'
-    displayName: 'Publish build artifacts'
+# 5️⃣ Publish build artifacts
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
+  displayName: 'Publish Artifacts'
