@@ -4,10 +4,13 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
 
 trigger:
-- master
+  - master
 
 pool:
   vmImage: 'ubuntu-latest'
+
+variables:
+  NODE_OPTIONS: '--openssl-legacy-provider'
 
 steps:
   - checkout: self
@@ -38,5 +41,18 @@ steps:
 
   - script: npm run build
     displayName: 'Build project'
-    env:
-      NODE_OPTIONS: --openssl-legacy-providerl and build'
+
+  # Package the build output into an artifact
+  - task: CopyFiles@2
+    inputs:
+      SourceFolder: '.next'
+      Contents: '**'
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/next-build'
+    displayName: 'Copy Next.js build output'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/next-build'
+      ArtifactName: 'next-build'
+      publishLocation: 'Container'
+    displayName: 'Publish build artifacts'
