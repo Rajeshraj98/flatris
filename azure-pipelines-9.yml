@@ -7,49 +7,22 @@ trigger:
   - master
 
 pool:
-  vmImage: 'ubuntu-latest'
-
-variables:
-  NODE_OPTIONS: '--openssl-legacy-provider'
+  vmImage: ubuntu-latest
 
 steps:
-  # Step 1: Checkout code
-  - checkout: self
-    fetchDepth: 1
-
-  # Step 2: Use correct Node.js version
   - task: NodeTool@0
     inputs:
-      versionSpec: '20.19.4'
-    displayName: 'Use Node.js 20.19.4'
+      versionSpec: '18.x'
+    displayName: 'Install Node.js'
 
-  # Step 3: Clean install dependencies
   - script: |
-      echo "Cleaning caches..."
-      rm -rf node_modules package-lock.json .next
-      npm cache clean --force
-      
-      echo "Installing dependencies..."
-      npm install next@14.2.5 webpack@5.89.0 tapable@2.2.1 --save-exact --legacy-peer-deps
-      npm ci || npm install --legacy-peer-deps
-    displayName: 'Install dependencies with fixed versions'
+      npm ci
+    displayName: 'Install dependencies'
 
-  # Step 4: Build the project
   - script: |
-      echo "Building Next.js..."
       npm run build
-    displayName: 'Build project'
+    displayName: 'Build Next.js project'
 
-  # Step 5: Verify .next exists
-  - script: |
-      if [ ! -d ".next" ]; then
-        echo "❌ Build failed: .next folder not found."
-        exit 1
-      fi
-      echo "✅ .next build output found."
-    displayName: 'Verify Next.js build output'
-
-  # Step 6: Copy build output
   - task: CopyFiles@2
     inputs:
       SourceFolder: '.next'
@@ -57,7 +30,6 @@ steps:
       TargetFolder: '$(Build.ArtifactStagingDirectory)/next-build'
     displayName: 'Copy Next.js build output'
 
-  # Step 7: Publish as artifact
   - task: PublishBuildArtifacts@1
     inputs:
       PathtoPublish: '$(Build.ArtifactStagingDirectory)/next-build'
