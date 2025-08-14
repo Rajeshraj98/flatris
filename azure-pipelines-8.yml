@@ -38,3 +38,5 @@ steps:
 
   - script: npm run build
     displayName: 'Build project'
+    env:
+      NODE_OPTIONS: --openssl-legacy-provider
